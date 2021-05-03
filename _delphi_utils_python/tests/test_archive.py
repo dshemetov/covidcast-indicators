@@ -107,6 +107,18 @@ CSVS_AFTER = {
         }),
 }
 
+CSV_DELETED_DF = pd.DataFrame(
+    np.empty(0, dtype=[
+        ("geo_id", str),
+        ("val", float),
+        ("se", float),
+        ("sample_size", float),
+        ("missing_val", int),
+        ("missing_se", int),
+        ("missing_sample_size", int)
+        ]),
+    index=[])
+
 class TestArchiveDiffer:
 
     def test_stubs(self):
@@ -163,7 +175,10 @@ class TestArchiveDiffer:
 
         # Check filesystem for actual files
         assert set(listdir(export_dir)) == {
-            "csv0.csv", "csv1.csv", "csv1.csv.diff", "csv3.csv", "csv4.csv", "csv4.csv.diff"}
+            "csv0.csv", "csv1.csv", "csv1.csv.diff",
+            "csv3.csv", "csv4.csv", "csv4.csv.diff",
+            "csv2.csv"
+        }
         assert_frame_equal(
             pd.read_csv(join(export_dir, "csv1.csv.diff"), dtype=CSV_DTYPES),
             csv1_diff)
@@ -180,8 +195,8 @@ class TestArchiveDiffer:
 
         arch_diff.filter_exports(common_diffs)
 
-        # Check exports directory just has incremental changes
-        assert set(listdir(export_dir)) == {"csv1.csv", "csv3.csv", "csv4.csv"}
+        # Check exports directory just has incremental and deleted changes
+        assert set(listdir(export_dir)) == {"csv1.csv", "csv2.csv", "csv3.csv", "csv4.csv"}
         assert_frame_equal(
             pd.read_csv(join(export_dir, "csv1.csv"), dtype=CSV_DTYPES),
             csv1_diff)
@@ -308,7 +323,7 @@ class TestS3ArchiveDiffer:
             assert_frame_equal(pd.read_csv(body, dtype=CSV_DTYPES), df)
 
         # Check exports directory just has incremental changes
-        assert set(listdir(export_dir)) == {"csv1.csv", "csv3.csv", "csv4.csv"}
+        assert set(listdir(export_dir)) == {"csv1.csv", "csv2.csv", "csv3.csv", "csv4.csv"}
         csv1_diff = pd.DataFrame({
             "geo_id": ["3", "2", "4"],
             "val": [np.nan, 2.1, 4.0],
@@ -521,7 +536,7 @@ class TestGitArchiveDiffer:
         original_branch.checkout()
 
         # Check exports directory just has incremental changes
-        assert set(listdir(export_dir)) == {"csv1.csv", "csv3.csv", "csv4.csv"}
+        assert set(listdir(export_dir)) == {"csv1.csv", "csv2.csv", "csv3.csv", "csv4.csv"}
         csv1_diff = pd.DataFrame({
             "geo_id": ["3", "2", "4"],
             "val": [np.nan, 2.1, 4.0],
