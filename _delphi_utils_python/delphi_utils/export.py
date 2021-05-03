@@ -12,42 +12,21 @@ from .nancodes import Nans
 
 def filter_contradicting_missing_codes(df, sensor, metric, date, logger=None):
     """Find values with contradictory missingness codes, filter them, and log."""
-    val_contradictory_missing_mask = (
-        (df["val"].isna() & df["missing_val"].eq(Nans.NOT_MISSING))
-        |
-        (df["val"].notna() & df["missing_val"].ne(Nans.NOT_MISSING))
-    )
-    se_contradictory_missing_mask = (
-        (df["se"].isna() & df["missing_se"].eq(Nans.NOT_MISSING))
-        |
-        (df["se"].notna() & df["missing_se"].ne(Nans.NOT_MISSING))
-    )
-    sample_size_contradictory_missing_mask = (
-        (df["sample_size"].isna() & df["missing_sample_size"].eq(Nans.NOT_MISSING))
-        |
-        (df["sample_size"].notna() & df["missing_sample_size"].ne(Nans.NOT_MISSING))
-    )
-    if df.loc[val_contradictory_missing_mask].size > 0:
-        if not logger is None:
+    columns = ["val", "se", "sample_size"]
+    # Get indicies where the XNOR is true (i.e. both are true or both are false).
+    masks = [
+        ~(df[column].isna() ^ df["missing_" + column].eq(Nans.NOT_MISSING))
+        for column in columns
+    ]
+    for mask in masks:
+        if not logger is None and df.loc[mask].size > 0:
             logger.info(
                 "Filtering contradictory missing code in " +
                 "{0}_{1}_{2}.".format(sensor, metric, date.strftime(format="%Y-%m-%d"))
             )
-        df = df.loc[~val_contradictory_missing_mask]
-    if df.loc[se_contradictory_missing_mask].size > 0:
-        if not logger is None:
-            logger.info(
-                "Filtering contradictory missing code in " +
-                "{0}_{1}_{2}.".format(sensor, metric, date.strftime(format="%Y-%m-%d"))
-            )
-        df = df.loc[~se_contradictory_missing_mask]
-    if df.loc[sample_size_contradictory_missing_mask].size > 0:
-        if not logger is None:
-            logger.info(
-                "Filtering contradictory missing code in " +
-                "{0}_{1}_{2}.".format(sensor, metric, date.strftime(format="%Y-%m-%d"))
-            )
-        df = df.loc[~se_contradictory_missing_mask]
+            df = df.loc[~mask]
+        elif logger is None and df.loc[mask].size > 0:
+            df = df.loc[~mask]
     return df
 
 def create_export_csv(
