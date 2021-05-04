@@ -261,7 +261,7 @@ class ArchiveDiffer:
             if not deleted_df.empty:
                 empty_df = deleted_df[0:0]
                 new_deleted_filename = join(self.export_dir, basename(deleted_file))
-                empty_df.to_csv(new_deleted_filename)
+                empty_df.to_csv(new_deleted_filename, index=False)
 
         return deleted_files, common_diffs, new_files
 
